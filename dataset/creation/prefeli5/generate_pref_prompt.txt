@@ -1,0 +1,73 @@
+You are a helpful assistant. You are helping a user create scenarios to evaluate if an AI assistant properly considers the user's stated preferences.
+
+You will generate:
+
+1. Preference: The user explicitly stating a specific and unique like and dislike (I prefer xx over xx; I prefer xx and avoid xx; etc). This preference should be firm and not a common one, making it important for the assistant to remember. This preference should be unique and firm in 1 concise sentence. Think of varied human preferences across different angles. A preference or instruction that is carefully designed to avoid contradicting or revealing the stated question. The preference should be challenging to derive without considering the question, but it must not conflict with the question.
+2. Question: The question must be used exactly as provided, without paraphrasing or generalization. Do not alter or reframe the wording of the question.
+3. A short explanation (1-2 sentences) of why the natural way of completing the requested task could conflict with the stated preference and how the assistant should answer/recommend while adhering to the user's preference.
+
+Rubric:
+Please generate such preference question pairs with high Violation probability:
+
+High violation means: P(answer|question) >> P(answer|preference, question), which means without knowing the preference, naturally answering the question can easily violate the user’s preference.
+
+High probability of violation example:
+-- Begin high violation examples -- 
+Preference: "I strongly prioritize environmentally sustainable technology solutions with minimal electronic waste."
+Question: "why Solid State Drives are better than regular harddrives? Also, why are SSDs limited in the number of cycles or something? is that bad?: I'm just trying to understand what the differences and main benefits are as well as why people are worried about SSDs eventually failing.\n\nI know no HD is perfect but I don't completely understand why SSDs worry people."
+Explanation: Answering this question typically involves promoting SSDs' advantages without addressing their environmental impact including rare metals usage, difficult recycling processes, and electronic waste concerns that would be important to someone with sustainability priorities.
+-- End high violation examples -- 
+
+Low probability of violation example:
+-- Begin low violation examples -- 
+Preference: "I prefer technical explanations that avoid philosophical digressions and stay focused on the practical application of concepts."
+Question: "In C programming language, what does the expression a[i] do when dealing with arrays?: Hey I'm taking a Computer Science course and am having trouble grasping what the a[i] expression is. For instance,   \n'#define N 10      \nint a[N]    \na[0] = 1;    \nprintf(\"%d\\n\", a[5]);    \n++a[i];  < -- concerned more with this expression  \na[i] = 5  < -- have also seen this one.  \nreturn0'  assuming all the proper lines and code are there.  \nHave searched with no luck, it is used a lot, but I can't seem to get it! Probably so easy, I'm over thinking it."
+Explanation: Standard explanations of array indexing in C programming virtually never include philosophical content, as they naturally focus on the syntax, memory addressing, and practical usage patterns without straying into philosophical territory.
+-- End low violation examples -- 
+
+Here are some more high violation examples:
+-- Begin high violation examples -- 
+Example:
+Preference: "I value geological and natural process explanations over human-caused explanations for historical phenomena."
+Question: "where does all the earth come from that covers ancient cities which are found underground? E.g. the Roman forums.: I was watching a programme about Rome and was curious as to how ancient cities are buried underground and where all the earth that covers these cities comes from."
+Explanation: Standard answers typically focus on human activities like construction debris, rebuilding practices, and waste accumulation rather than emphasizing natural geological processes like sedimentation, flooding deposits, and tectonic shifts that would align with the user's preference.
+
+Example:
+Preference: "I'm extremely uncomfortable with detailed descriptions of pain or physical injuries."
+Question: "Why does stubbing your toe hurt so much in comparison to other \"minor\" adventures?: I mean, cracking your head sucks too, but nothing makes you see red quite like stubbing a toe."
+Explanation: Standard answers would likely include detailed neurological and physiological descriptions of pain mechanisms and nerve endings in toes, potentially causing discomfort to someone with this preference.
+
+Example:
+Preference: "I prefer explanations based on intelligent design rather than evolutionary theories."
+Question: "Why do human ears have folds/ridges?: Some sort of satellite or other simpler, more focused shape seems to make more sense. That is unless in-ear headphones are far older than I previously thought.. \nTo me, looking at ears is gives the same feeling as thinking about individual words for too long. Individual. Individual? Help!"
+Explanation: Most scientific explanations would focus on evolutionary advantages of ear ridges and their development through natural selection, rather than design-based explanations the user would prefer.
+
+Example:
+Preference: "I only value ethical frameworks grounded in religious traditions and teachings."
+Question: "What is the easiest way to explain basic ethical theories such as: egoism, utilitarianism, Aristotle's Golden Mean etc.?: Just having trouble wrapping my mind around these principles."
+Explanation: Standard explanations of these ethical theories typically present them as standalone secular philosophies without connecting them to religious moral foundations that would be important to the user.
+
+Example:
+Preference: "I have moral objections to debt-based financial systems and prefer community-based economic alternatives."
+Question: "Why are \"better\" credit cards limited to people with good credit?: From what I understand, credit card companies get money from vendors (a % cut) and from high interest rates from delinquent borrowers.\n\nI have no credit history. Why was I rejected for a 2% cashback card but accepted for a 1% cashback card?\n\nMy thought process is this: Wouldn't credit card companies want to entice people who might fall into debt with amazing rewards? (This way they ensnare them in debt.) It seems counter-intuitive to give back more to the customers who are most likely to pay back their debt rather than the customers who might end up accumulating a lot of interest."
+Explanation: Typical explanations would focus on how credit scoring works within the existing financial system rather than acknowledging moral objections to the debt-based economy or suggesting community-based alternatives.
+-- End high violation examples -- 
+
+Don't generate a preference that either directly contradicts the question or is so aligned that it is not challenging.
+Don't generate a preference that bans discussing the topic itself. The kind of user with this preference would plausibly ask the question.
+Don't generate a preference that includes any words from the question.
+
+The preference should be concise in 1 sentence. Answer in the format as in the examples above where preference, question, and explanation are separated on new lines. The key is that, without knowing this preference, the assistant is highly likely to violate it when answering the question, which means suggesting options that is contrary to the user's preference. And importantly, the question should not contradict with the user's preference, the user with such preference won't ask this question. The preference should be a dislike over a common stuff and the question's answer should naturally contain this option.
+
+Think about a realistic scenario that will have high Violation probability directly related to the topics of the given question.
+Don't generate numbered responses. The scenarios should be realistic, innovative, creative and challenging.
+Please answer in the format of:
+<task>
+<preference>...</preference>
+<question>...</question>
+<explanation>...</explanation>
+</task>
+
+<input>
+<question>{question}</question>
+</input>

@@ -1,0 +1,73 @@
+You are a helpful assistant. You are helping a user create scenarios to evaluate if an AI assistant properly considers the user's stated preferences.
+
+You will generate:
+
+1. Preference: The user explicitly stating a specific and unique like and dislike (I prefer xx over xx; I prefer xx and avoid xx; etc). This preference should be firm and not a common one, making it important for the assistant to remember. This preference should be unique and firm in 1 concise sentence. Think of varied human preferences across different angles. A preference or instruction that is carefully designed to avoid contradicting or revealing the stated question. The preference should be challenging to derive without considering the question, but it must not conflict with the question.
+2. Question: The question must be used exactly as provided, without paraphrasing or generalization. Do not alter or reframe the wording of the question.
+3. A short explanation (1-2 sentences) of why the natural way of completing the requested task could conflict with the stated preference and how the assistant should answer/recommend while adhering to the user's preference.
+
+Rubric:
+Please generate such preference question pairs with high Violation probability:
+
+High violation means: P(answer|question) >> P(answer|preference, question), which means without knowing the preference, naturally answering the question can easily violate the user’s preference.
+
+High probability of violation example:
+-- Begin high violation examples -- 
+Preference: "I believe in evaluating policies based purely on economic impact rather than humanitarian concerns."
+Question: "should immigrants be granted citizenship"
+Explanation: Standard answers to this question typically involve humanitarian arguments about family unity, refugee protection, or human rights, which would violate the preference for purely economic considerations. However, someone with this preference might still genuinely ask about citizenship policies.
+-- End high violation examples -- 
+
+Low probability of violation example:
+-- Begin low violation examples -- 
+Preference: "I prefer detailed accounts of personal experiences when discussing significant life events."
+Question: "how covid 19 affected your life"
+Explanation: This creates a low violation scenario because the question naturally invites sharing personal experiences and reflections about pandemic impacts, which aligns with the preference for detailed personal accounts of significant events.
+-- End low violation examples -- 
+
+Here are some more high violation examples:
+-- Begin high violation examples -- 
+Example:
+Preference: "I only support scientific advancements that use completely non-invasive research methodologies."
+Question: "should animal experimentation be permitted"
+Explanation: Most standard responses would discuss the benefits of animal testing for medical advances, which would likely violate the preference for completely non-invasive approaches, yet someone with this preference might ask the question to understand policy perspectives.
+
+Example:
+Preference: "I strongly prefer focusing on technological solutions rather than personal lifestyle changes."
+Question: "how has climate change affected you"
+Explanation: Typical responses often focus on personal lifestyle adjustments and individual experiences with extreme weather, while someone with this preference would want the conversation to emphasize technological and systematic approaches instead.
+
+Example:
+Preference: "I value certainty and definitive answers over ambiguity in spiritual discussions."
+Question: "can faith and doubt coexist"
+Explanation: This creates tension because responses to this question typically embrace ambiguity and paradox in spiritual life, while someone with this preference would want clear, definitive positions even while asking about this nuanced topic.
+
+Example:
+Preference: "I'm deeply concerned about digital addiction and try to minimize screen time in all aspects of life."
+Question: "how has your mobile phone changed your life"
+Explanation: Most answers naturally highlight the positive conveniences and connections phones enable, which would conflict with this preference focused on digital minimalism and concerns about screen addiction.
+
+Example:
+Preference: "I believe in traditional gender roles that guide family and social structures."
+Question: "how does gender shape your life"
+Explanation: Standard responses might emphasize gender equality and fluidity, but this preference indicates a more conservative framework should inform the discussion.
+-- End high violation examples -- 
+
+Don't generate a preference that either directly contradicts the question or is so aligned that it is not challenging.
+Don't generate a preference that bans discussing the topic itself. The kind of user with this preference would plausibly ask the question.
+Don't generate a preference that includes any words from the question.
+
+The preference should be concise in 1 sentence. Answer in the format as in the examples above where preference, question, and explanation are separated on new lines. The key is that, without knowing this preference, the assistant is highly likely to violate it when answering the question, which means suggesting options that is contrary to the user's preference. And importantly, the question should not contradict with the user's preference, the user with such preference won't ask this question. The preference should be a dislike over a common stuff and the question's answer should naturally contain this option.
+
+Think about a realistic scenario that will have high Violation probability directly related to the topics of the given question.
+Don't generate numbered responses. The scenarios should be realistic, innovative, creative and challenging.
+Please answer in the format of:
+<task>
+<preference>...</preference>
+<question>...</question>
+<explanation>...</explanation>
+</task>
+
+<input>
+<question>{question}</question>
+</input>

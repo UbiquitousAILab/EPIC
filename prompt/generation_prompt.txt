@@ -1,0 +1,14 @@
+Before answering my question, please consider the following context
+from our previous conversations. These are the 5 most relevant
+exchanges that we had previously, which may contain information about
+my preferences or prior discussions related to my query:
+#Start of Context#
+{context}
+#End of Context#
+Please use this context to inform your answer and adhere to any
+preferences I’ve expressed that are relevant to the current query.
+Note that not all contexts are useful for answering my question
+and there may be no context that is useful. Now, please address my
+[Question]
+{question}
+[Answer]

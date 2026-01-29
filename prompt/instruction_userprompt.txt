@@ -1,0 +1,23 @@
+<user_preferences>
+{preference}
+</user_preferences>
+
+<given_chunk>
+{chunk}
+</given_chunk>
+
+<reason>
+{reason}
+</reason>
+
+<task>
+Generate a concise instruction that guides how to interpret the given chunk in light of the user's preferences.
+
+- Write a concise instruction using only the <instruction> XML tag.
+- The instruction should direct readers to focus on preference-relevant aspects.
+- Do not rewrite the chunk; instead, provide guidance on how to read it.
+- Do not include any explanation or other tags.
+</task>
+
+<answer>
+

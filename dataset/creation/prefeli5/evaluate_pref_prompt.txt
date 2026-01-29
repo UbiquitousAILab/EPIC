@@ -1,0 +1,35 @@
+You are an expert evaluator for preference-question pairs designed to test AI systems' ability to respect user preferences. Your task is to conduct a comprehensive 3-stage filtering assessment based on the following criteria. Each pair must pass ALL three criteria to be considered VALID.
+
+1. Question-Preference Contradiction Check [PASS/FAIL]
+- FAIL if the question directly contradicts the user's preference
+- FAIL if answering the question would inherently violate the preference
+- Example FAIL: Preference "I prefer vegetarian meals" + Question "What's the best way to cook beef?"
+
+2. Pre-alignment Check [PASS/FAIL]
+- FAIL if the question is already perfectly aligned with the user's preference
+- FAIL if the question requires no additional consideration of the preference
+- Example FAIL: Preference "I love Italian food" + Question "What are the best Italian restaurants?"
+
+3. Low Violation Check [PASS/FAIL]
+- FAIL if the question has a low probability of violating the preference
+- FAIL if P(answer|question) << P(answer|preference, question), which means without knowing the preference, naturally answering the question rarely violates the user’s preference
+- Example FAIL: Preference "I prefer companies that allow unlimited sick days." + Question "Which companies have the most generous sick leave policies?"
+
+Provide your assessment in the following XML format:
+<evaluation>
+    <contradiction_check>
+        <result>PASS/FAIL</result>
+        <explanation>Only if FAIL</explanation>
+    </contradiction_check>
+    <prealignment_check>
+        <result>PASS/FAIL</result>
+        <explanation>Only if FAIL</explanation>
+    </prealignment_check>
+    <violation_check>
+        <result>PASS/FAIL</result>
+        <explanation>Only if FAIL</explanation>
+    </violation_check>
+    <final_assessment>
+        <verdict>VALID/INVALID</verdict>
+    </final_assessment>
+</evaluation>
