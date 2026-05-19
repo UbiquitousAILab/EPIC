@@ -129,7 +129,7 @@ class EPICUtils:
         elif doc_mode == "eli5":
             self.chunk_file = "sampled_eli5_chunk_2000.jsonl"
             self.embedding_file = f"sampled_eli5_embedding_{model_name_clean}_2000.npy"
-        elif doc_mode == "eli5":
+        elif doc_mode == "lmsys":
             self.chunk_file = "sampled_lmsys_chunk_2000.jsonl"
             self.embedding_file = f"sampled_lmsys_embedding_{model_name_clean}_2000.npy"
         
