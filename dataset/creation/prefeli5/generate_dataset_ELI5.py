@@ -1,8 +1,8 @@
 import os
 import re
-import nlp
 import json
 import openai
+from datasets import load_dataset
 import random
 import argparse
 from tqdm import tqdm
@@ -109,7 +109,7 @@ def main():
     pq_pairs_file = os.path.join(ROOT_DIR, "preference_question_pairs.jsonl")
 
     if args.mode == "question":
-        ds = nlp.load_dataset("eli5")
+        ds = load_dataset("eli5")
         sample_eli5_questions(ds, output_file=sampled_eli5_questions)
     elif args.mode == "preference":
         if not os.path.exists(final_eli5_questions):

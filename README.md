@@ -24,7 +24,6 @@
 conda create -n epic python=3.10 -y
 conda activate epic
 pip install -r requirements.txt
-pip install datasets   # required for LMSYS corpus collection
 ```
 
 GPU with CUDA is recommended for embedding models and vLLM.
