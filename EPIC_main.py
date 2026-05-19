@@ -39,8 +39,6 @@ class EPICMain:
         self._models_loaded = False
         self._chunks_cache = None
         self._embeddings_cache = None
-        self._related_chunks_cache = None
-        self._related_embeddings_cache = None
     
     def _load_common_resources(self):
         print("Loading common resources...")
@@ -97,11 +95,18 @@ class EPICMain:
         # 1. Indexing
         if self.mode in ["indexing", "all"]:
             print("\n1. Starting indexing...")
-            faiss_index_path = os.path.join(data_dir, f"index_flat_{self.emb_model_name.replace('/', '_')}.faiss")
+            model_name_clean = self.emb_model_name.replace("/", "_")
+            faiss_index_path = os.path.join(data_dir, f"index_{model_name_clean}.faiss")
+            embeddings_path = os.path.join(data_dir, f"embeddings_{model_name_clean}.npy")
+            kept_path = os.path.join(method_dir, "kept.jsonl")
 
             print(f"faiss_index_path: {faiss_index_path}, dataset: {self.utils.dataset_name}")
 
-            if os.path.exists(faiss_index_path):
+            if (
+                os.path.exists(faiss_index_path)
+                and os.path.exists(embeddings_path)
+                and os.path.exists(kept_path)
+            ):
                 print(f"✅ Indexing already completed. Skipping...")
             else:
                 self.indexing.run_indexing_with_cache(persona_index, cached_resources)

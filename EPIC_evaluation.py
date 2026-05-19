@@ -11,12 +11,6 @@ class EPICEvaluation:
         self.output_dir = utils.output_dir
         self.emb_model_name = utils.emb_model_name
         self.doc_mode = utils.doc_mode
-        self.chunk_file = utils.chunk_file
-        self.embedding_file = utils.embedding_file
-        self.batch_size = getattr(utils, 'batch_size', 16)  # Default batch size if not set
-        
-        self.embeddings_file = os.path.join(self.output_dir, f"embeddings_{self.emb_model_name.replace('/', '_')}.npy")
-        self.index_file = os.path.join(self.output_dir, f"index_{self.emb_model_name.replace('/', '_')}.faiss")
 
     def process_metric(self, task, metric, eval_message_text, system_prompt):
         preference = task["preference"]

@@ -4,12 +4,9 @@ import csv
 import time
 import json
 import torch
-import warnings
 import numpy as np
 from bs4 import BeautifulSoup
-from difflib import get_close_matches
-from transformers import AutoModel, AutoModelForCausalLM, AutoTokenizer, set_seed
-from torch.nn.parallel import DataParallel
+from transformers import AutoModel, AutoTokenizer, set_seed
 from tqdm.auto import tqdm
 import requests
 import random
@@ -135,8 +132,6 @@ class EPICUtils:
         
         self.emb_tokenizer = None
         self.emb_model = None
-        self.hf_emb_tokenizer = None
-        self.hf_model = None
 
     def load_models(self):
         if self.emb_model_name == "nvidia/NV-Embed-v2":
@@ -322,81 +317,6 @@ class EPICUtils:
             personas = json.load(f)
         return next(p for p in personas if p["persona_index"] == persona_index)
 
-    def load_persona_questions(self, file_path, persona_index):
-        with open(file_path, "r", encoding="utf-8") as f:
-            personas = json.load(f)
-        for p in personas:
-            if p["persona_index"] == persona_index:
-                all_qs = []
-                for block in p["preference_blocks"]:
-                    pref = block["preference"]
-                    for q in block["queries"]:
-                        all_qs.append((pref, q["question"]))
-                return all_qs
-        raise ValueError(f"Persona index {persona_index} not found.")
-    
-    def extract_preferences_from_response(self, response):
-        soup = BeautifulSoup(response, "html.parser")
-        preferences = [tag.text.strip() for tag in soup.find_all("preference")]
-        return preferences
-
-    def retrieve_top_k_wq_cosine(self, query, preferences, index, weighted=False, chunk_metadata=None):
-        top_k = self.top_k
-        start_retrieval = time.time()
-        query_emb = self.embed_query_mp(query)
-        
-        # Collect preference embeddings into numpy array
-        preference_embs = []
-        for preference in preferences:
-            preference_emb = self.embed_query_mp(preference)
-            preference_embs.append(preference_emb.squeeze(0))  # Convert to (768,) shape
-        
-        # Stack into numpy array
-        preference_embs = np.vstack(preference_embs)  # (num_pref, 768)
-        
-        # Calculate cosine similarity with np.dot (embeddings already normalized)
-        sims = np.dot(preference_embs, query_emb.T).squeeze()  # (num_pref,)
-        
-        query_emb = self.embed_query_mp(query)
-        
-        count = 0
-        max_sim = -1
-        max_i = -1
-        for i in range(len(preferences)):
-            if sims[i] > max_sim:
-                max_sim = sims[i]
-                max_i = i
-
-        if count == 0:
-            if weighted:
-                query_emb += sims[max_i] * self.embed_query_mp(preferences[max_i])
-            else:
-                query_emb += self.embed_query_mp(preferences[max_i])
-
-        query_emb = query_emb / np.linalg.norm(query_emb, axis=1, keepdims=True)
-        D, I = index.search(query_emb, top_k)
-        retrieved = []
-        retrieved_instructions = []
-        for idx in I[0]:
-            if idx < 0 or idx >= len(chunk_metadata):
-                continue
-            meta = chunk_metadata[idx]
-            retrieved.append(meta["text"])
-            retrieved_instructions.append(meta.get("instruction", meta.get("insight", "")))
-            if len(retrieved) >= top_k:
-                break
-        retrieval_time = time.time() - start_retrieval
-
-        context_parts = []
-        for i, (doc, inst) in enumerate(zip(retrieved, retrieved_instructions)):
-            if inst:
-                context_parts.append(f"Document {i+1}:\nInterpretation Guidance: {inst}\nContent: {doc}")
-            else:
-                context_parts.append(f"Document {i+1}: {doc}")
-        context = "\n\n".join(context_parts)
-
-        return context, retrieval_time
-
     def load_prompt_template(self, file_path):
         with open(file_path, "r", encoding="utf-8") as f:
             return f.read()
@@ -408,13 +328,6 @@ class EPICUtils:
         with open(file_path, 'a', encoding='utf-8') as f:
             for item in items:
                 f.write(json.dumps(item, ensure_ascii=False) + "\n")
-    
-    def load_jsonl(self, file_path):
-        data = []
-        with open(file_path, 'r', encoding='utf-8') as f:
-            for line in f:
-                data.append(json.loads(line))
-        return data
     
     def save_json(self, file_path, data):
         with open(file_path, 'w', encoding='utf-8') as f:
@@ -440,21 +353,6 @@ class EPICUtils:
         decision = decision_tag.text.strip() if decision_tag else ""
         reason = reason_tag.text.strip() if reason_tag else ""
         return decision, reason
-
-    def parse_decision_and_reason_preference(self, input_string):
-        """Parse decision, reason, and preference from LLM response"""
-        soup = BeautifulSoup(input_string, "html.parser")
-        decision_tag = soup.find("decision")
-        reason_tag = soup.find("reason")
-        preference_tag = soup.find("relevant_preference")
-        decision = decision_tag.text.strip() if decision_tag else ""
-        reason = reason_tag.text.strip() if reason_tag else ""
-        preference = preference_tag.text.strip() if preference_tag else ""
-        
-        # Clean preference text
-        preference = self.clean_preference_text(preference)
-        
-        return decision, reason, preference
 
     def parse_decision_and_reason_preferences(self, input_string):
         """Parse decision, reason, and preferences from LLM response"""
@@ -529,20 +427,9 @@ class EPICUtils:
             return preference_text
 
     def process_chunk_rand_prefs(self, idx, chunk_text, preference_text, prompt_template, prompt_template_system=None, preference_list=None, kept_save_info=None):
-        # Sort preferences based on cosine similarity if kept_save_info exists
-        if kept_save_info and self.method in ["final"]:
-            # Sort preferences with similarities
-            pref_sim_pairs = list(zip(kept_save_info['relevant_preferences'], kept_save_info['relevant_similarities']))
-            # Sort by similarity in ascending order
-            pref_sim_pairs.sort(key=lambda x: x[1], reverse=False)
-            # Use all relevant preferences 
-            sorted_preferences = [pref for pref, sim in pref_sim_pairs]
-            preference_text = "\n".join([f"{i+1}. '{p}'" for i, p in enumerate(sorted_preferences)])
-        else:
-            # Original method: random shuffle
-            shuffled_list = preference_list[:]
-            random.Random(idx).shuffle(shuffled_list)
-            preference_text = "\n".join([f"{i+1}. '{p}'" for i, p in enumerate(shuffled_list)])
+        shuffled_list = preference_list[:]
+        random.Random(idx).shuffle(shuffled_list)
+        preference_text = "\n".join([f"{i+1}. '{p}'" for i, p in enumerate(shuffled_list)])
         filled_prompt = self.format_prompt(prompt_template, preference_text, chunk_text)
         
         try:
@@ -615,21 +502,13 @@ class EPICUtils:
                 "status": "failed"
             }
 
-    def load_existing_results_with_resume(self, result_file):
-        """
-        Load already processed chunks from existing result file (JSONL format)
-        """
-        if os.path.exists(result_file):
-            try:
-                existing_results = []
-                with open(result_file, 'r', encoding='utf-8') as f:
-                    for line in f:
-                        if line.strip():
-                            existing_results.append(json.loads(line.strip()))
-                return existing_results
-            except (json.JSONDecodeError, FileNotFoundError):
-                return []
-        return []
+    def parse_instruction(self, input_string):
+        """Parse instruction from LLM response."""
+        soup = BeautifulSoup(input_string, "html.parser")
+        instruction_tag = soup.find("instruction")
+        if instruction_tag:
+            return instruction_tag.text.strip()
+        return input_string.strip() if input_string else None
 
     def inst_single(self, entry, inst_prompt_user, inst_prompt_system=None):
         """Generate instruction for a single kept chunk"""
@@ -669,71 +548,3 @@ class EPICUtils:
             "reason": reason,
             "relevant_preference": preferences
         }
-
-    def parse_numbered_preferences(self, preference_text, preference_list):
-        """
-        Parse numbered preference text and match with actual preference text
-        
-        Args:
-            preference_text: Numbered preference text (e.g., "1. I am fascinated by Renaissance...\n5. I love visiting heritage sites...")
-            preference_list: Original preference text list
-            
-        Returns:
-            matched_preferences: List of matched preference texts
-        """
-        matched_preferences = []
-        
-        # Split by lines
-        lines = preference_text.split('\n')
-        
-        for line in lines:
-            line = line.strip()
-            if not line:
-                continue
-                
-            # Check if numbered format (e.g., "1. ", "2. ", "5. ")
-            if line[0].isdigit() and '. ' in line:
-                # Separate number and text
-                dot_index = line.find('. ')
-                if dot_index != -1:
-                    extracted_text = line[dot_index + 2:].strip()
-                    
-                    # Find extracted text in preference_list
-                    for pref in preference_list:
-                        if extracted_text == pref:
-                            matched_preferences.append(pref)
-                            break
-                    else:
-                        # Check partial match if no exact match
-                        for pref in preference_list:
-                            if extracted_text in pref or pref in extracted_text:
-                                matched_preferences.append(pref)
-                                break
-                        else:
-                            print(f"Warning: Could not match preference text: '{extracted_text}'")
-            else:
-                # Direct matching when no number
-                for pref in preference_list:
-                    if line == pref:
-                        matched_preferences.append(pref)
-                        break
-                else:
-                    # Check partial match
-                    for pref in preference_list:
-                        if line in pref or pref in line:
-                            matched_preferences.append(pref)
-                            break
-                    else:
-                        print(f"Warning: Could not match preference text: '{line}'")
-        
-        return matched_preferences
-
-    def get_closest_preference(self, preference, original_preference_list):
-        """
-        Find most similar preference text based on difflib's get_close_matches
-        """
-        pref_list_lower = [p.lower() for p in original_preference_list]
-        lower_to_orig = {p.lower(): p for p in original_preference_list}
-        q = preference.lower().strip()
-        best = get_close_matches(q, pref_list_lower, n=1, cutoff=0.0)
-        return lower_to_orig[best[0]] if best else None

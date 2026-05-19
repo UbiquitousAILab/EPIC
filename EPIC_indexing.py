@@ -87,7 +87,6 @@ class EPICIndexing:
         
         print("\nStarting cosine similarity filtering...")
         kept_save, kept_chunks, filtered_save = [], [], []
-        keep_indices = []
         relevant_preferences = []
         relevant_similarities = []
         
@@ -184,48 +183,127 @@ class EPICIndexing:
             self.utils.save_jsonl(failed_file, failed_chunks)
             print(f"⚠️ Failed chunks saved to {failed_file}")
 
-        preference_text = "\n".join([f"- {p}" for p in preference_list])
         instruction_prompt_system = self.utils.load_prompt_template(self.utils.instruction_system)
         instruction_prompt_user = self.utils.load_prompt_template(self.utils.instruction_user)
-        
+
         start_instruction = time.time()
         inst_final = []
-        
-        with ThreadPoolExecutor() as executor:  
-            futures = [executor.submit(self.utils.inst_single, entry, instruction_prompt_user, inst_prompt_systrem=instruction_prompt_system) for entry in kept]
-            for future in tqdm(as_completed(futures), total=len(futures), desc="Generating instructions", leave=False, ncols=100):
-                try:
-                    result = future.result()
-                    inst_final.append(result)
-                except Exception as e:
-                    print(f"Instruction generation failed: {e}")
-        inst_time = time.time() - start_instruction
-        self.utils.save_jsonl(inst_file, inst_final)
-        print(f"✅ Instruction info saved to {inst_file}")
-        
-        print(f"Instruction generation completed. Produced {len(inst_final)} instructions")
-        merged_chunks = [item["chunk"] for item in inst_final]
-    
-        print("\nCreating FAISS index...")
-        start_faiss = time.time()
-        
-        print("Generating embeddings...")
 
-        embeddings = self.utils.embed_texts_mp(merged_chunks)
+        if os.path.exists(inst_file):
+            print(f"⚠️ Found existing instructions file. Skipping instruction generation: {inst_file}")
+            with open(inst_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip():
+                        inst_final.append(json.loads(line))
+            inst_time = 0.0
+        else:
+            if kept:
+                first_entry = kept[0]
+                first_chunk = first_entry["chunk"]
+                preferences = first_entry.get("relevant_preference", [])
+                preference_text_inst = (
+                    "\n".join([f"- {p}" for p in preferences])
+                    if isinstance(preferences, list)
+                    else preferences
+                )
+                filled_user_prompt = instruction_prompt_user.format(
+                    preference=preference_text_inst,
+                    chunk=first_chunk,
+                    reason=first_entry["reason"],
+                )
+                prompt_sample = {
+                    "system_prompt": instruction_prompt_system,
+                    "user_prompt": filled_user_prompt,
+                    "full_conversation": (
+                        f"System: {instruction_prompt_system}\n\nUser: {filled_user_prompt}"
+                    ),
+                }
+                prompt_file = os.path.join(method_dir, "instruction_prompt_sample.json")
+                self.utils.save_json(prompt_file, prompt_sample)
+                print(f"✅ Instruction prompt sample saved to {prompt_file}")
+
+            with ThreadPoolExecutor() as executor:
+                futures = [
+                    executor.submit(
+                        self.utils.inst_single,
+                        entry,
+                        instruction_prompt_user,
+                        inst_prompt_system=instruction_prompt_system,
+                    )
+                    for entry in kept
+                ]
+                for future in tqdm(
+                    as_completed(futures),
+                    total=len(futures),
+                    desc="Generating instructions",
+                    leave=False,
+                    ncols=100,
+                ):
+                    try:
+                        inst_final.append(future.result())
+                    except Exception as e:
+                        print(f"Instruction generation failed: {e}")
+            inst_time = time.time() - start_instruction
+            with open(inst_file, "w", encoding="utf-8") as f:
+                for item in inst_final:
+                    f.write(json.dumps(item, ensure_ascii=False) + "\n")
+            print(f"✅ Instruction info saved to {inst_file}")
+
+        print(f"Instruction generation completed. Produced {len(inst_final)} instructions")
+
+        print("\nCreating FAISS index (instruction embeddings)...")
+        start_faiss = time.time()
+
+        chunk_metadata = []
+        for idx, item in enumerate(inst_final):
+            chunk = item["chunk"]
+            instruction = item.get("instruction", "")
+            relevant_prefs = item.get("relevant_preference", [])
+            if isinstance(relevant_prefs, str):
+                relevant_prefs = [relevant_prefs]
+            chunk_metadata.append({
+                "id": idx,
+                "text": chunk,
+                "instruction": instruction,
+                "relevant_preferences": relevant_prefs,
+                "preference_ids": relevant_prefs,
+                "reason": item.get("reason", ""),
+                "active": True,
+            })
+
+        instructions_list = [item["instruction"] for item in chunk_metadata]
+        print(f"Generating embeddings for {len(instructions_list)} instructions...")
+        embeddings = self.utils.embed_texts_mp(instructions_list)
         embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
-        print(f"Generated {len(embeddings)} embeddings")
-            
+        print(f"Generated {len(embeddings)} instruction embeddings")
+
         dim = embeddings.shape[1]
         print("Creating FAISS IndexFlatIP...")
-        index = faiss.IndexFlatIP(dim)  # Inner Product for cosine similarity
-
+        index = faiss.IndexFlatIP(dim)
         index.add(embeddings.astype(np.float32))
-        
+
         print("Saving results...")
         faiss.write_index(index, index_file)
         print(f"FAISS saved in {index_file}")
         np.save(embeddings_file, embeddings)
-        self.utils.save_jsonl(os.path.join(method_dir, "kept.jsonl"), [{"text": chunk} for chunk in merged_chunks])
+
+        kept_file = os.path.join(method_dir, "kept.jsonl")
+        with open(kept_file, "w", encoding="utf-8") as f:
+            for item in chunk_metadata:
+                f.write(json.dumps(item, ensure_ascii=False) + "\n")
+        print(f"✅ Kept chunks with metadata saved to {kept_file}")
+
+        pref_mapping = {
+            "preference_to_idx": {pref: idx for idx, pref in enumerate(preference_list)},
+            "preference_list": preference_list,
+            "total_chunks": len(chunk_metadata),
+            "method": self.method,
+        }
+        pref_mapping_file = os.path.join(method_dir, "preference_mapping.json")
+        self.utils.save_json(pref_mapping_file, pref_mapping)
+        print(f"✅ Saved preference mapping to {pref_mapping_file}")
+
+        print(f"\n📊 Instruction indexing summary: {len(chunk_metadata)} chunks indexed")
         
         faiss_time = time.time() - start_faiss
         total_time = time.time() - start_total
