@@ -7,13 +7,13 @@ Official code release for **EPIC** — preference-aware retrieval and personaliz
 ### Motivation
 
 <p align="center">
-  <img src="assets/overview.png" width="95%"/>
+  <img src="assets/epic_motivation.png" width="95%"/>
 </p>
 
 ### Method
 
 <p align="center">
-  <img src="assets/method.png" width="95%"/>
+  <img src="assets/epic_method.png" width="95%"/>
 </p>
 
 ---
