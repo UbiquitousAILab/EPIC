@@ -2,49 +2,19 @@
 
 **Accepted at [ICML 2026](https://icml.cc/).**
 
-Official code release for **EPIC** — preference-aware retrieval and personalized response generation over large document corpora. EPIC indexes persona-specific evidence from Wikipedia, ELI5, or LMSYS chat logs, retrieves relevant context, and generates answers that respect stated user preferences.
+Official code release for **EPIC** — preference-aware retrieval and personalized response generation over large document corpora.
 
-> Paper link and BibTeX will be added upon camera-ready release.
+### Motivation
 
 <p align="center">
-  <a href="assets/epic_overview_seafood.pdf">
-    <img src="https://img.shields.io/badge/Overview-PDF-blue" alt="EPIC overview figure"/>
-  </a>
-  &nbsp;
-  <a href="assets/epic_detailed_seafood.pdf">
-    <img src="https://img.shields.io/badge/Detailed%20example-PDF-blue" alt="EPIC detailed example"/>
-  </a>
+  <img src="assets/overview.png" width="95%"/>
 </p>
 
-| Figure | Description |
-|--------|-------------|
-| [assets/epic_overview_seafood.pdf](assets/epic_overview_seafood.pdf) | High-level EPIC pipeline (example) |
-| [assets/epic_detailed_seafood.pdf](assets/epic_detailed_seafood.pdf) | Detailed retrieval & generation trace |
-| [assets/comparison_plot_a.pdf](assets/comparison_plot_a.pdf) | Comparison (a) |
-| [assets/comparison_plot_b.pdf](assets/comparison_plot_b.pdf) | Comparison (b) |
-| [assets/comparison_plot_c.pdf](assets/comparison_plot_c.pdf) | Comparison (c) |
-| [assets/streaming_ondevice.pdf](assets/streaming_ondevice.pdf) | On-device / streaming latency |
+### Method
 
----
-
-## Overview
-
-EPIC runs three stages per persona:
-
-1. **Indexing** — build a FAISS index over retrieved document chunks  
-2. **Generation** — produce preference-aware answers with a local LLM (vLLM)  
-3. **Evaluation** — automatic error-type checking (hallucination, helpfulness, etc.)
-
-Bundled benchmark tasks:
-
-| `--dataset` | `--doc_mode` | Personas (`--persona_index all`) |
-|-------------|--------------|----------------------------------|
-| `PrefWiki`  | `wiki`       | 0–56 (57)                        |
-| `PrefRQ`    | `wiki`       | 0–89 (90)                        |
-| `PrefELI5`  | `eli5`       | 0–72 (73)                        |
-| `PrefEval`  | `lmsys`      | 0–56 (57)                        |
-
-Task JSON files live under [`dataset/`](dataset/).
+<p align="center">
+  <img src="assets/method.png" width="95%"/>
+</p>
 
 ---
 
@@ -161,7 +131,7 @@ bash run_vllm_oss.sh 0 8008    # gpt-oss-20b
 
 ### 3. Run EPIC
 
-Default settings match the paper setup: **Contriever** embeddings, **Llama-3.1-8B-Instruct** via vLLM on port **8008**.
+Default settings: **Contriever** embeddings, **Llama-3.1-8B-Instruct** via vLLM on port **8008**.
 
 **Single persona (PrefWiki, full pipeline):**
 
@@ -216,22 +186,12 @@ python EPIC_main.py --method EPIC --persona_index all --mode all \
 
 Run stages separately with `--mode indexing`, `generation`, or `evaluation`.
 
----
-
-## Arguments (`EPIC_main.py`)
-
-| Argument | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `--method` | yes | — | `EPIC` |
-| `--persona_index` | yes | — | Persona id (`0`, `1`, …) or `all` |
-| `--device` | no | `cuda:0` | Device for embedding model |
-| `--mode` | yes | — | `indexing` \| `generation` \| `evaluation` \| `all` |
-| `--output_dir` | yes | — | Base output directory (suffix added per dataset, e.g. `output_prefwiki/wiki`) |
-| `--dataset` | yes | — | `PrefWiki` \| `PrefRQ` \| `PrefELI5` \| `PrefEval` |
-| `--emb_model_name` | no | `facebook/contriever` | Chunk embedding model |
-| `--doc_mode` | yes | — | `wiki` (PrefWiki, PrefRQ) \| `eli5` (PrefELI5) \| `lmsys` (PrefEval) |
-| `--vllm_server_url` | no | `8008` | Port (`8008`) or full URL (`http://localhost:8008/v1`) |
-| `--llm_model_name` | no | `meta-llama/Llama-3.1-8B-Instruct` | Must match the vLLM-served model |
+| `--dataset` | `--doc_mode` | Personas (`--persona_index all`) |
+|-------------|--------------|----------------------------------|
+| `PrefWiki`  | `wiki`       | 0–56 (57)                        |
+| `PrefRQ`    | `wiki`       | 0–89 (90)                        |
+| `PrefELI5`  | `eli5`       | 0–72 (73)                        |
+| `PrefEval`  | `lmsys`      | 0–56 (57)                        |
 
 ---
 
@@ -263,26 +223,11 @@ preprocess/           # Corpus sampling, chunking, embeddings
 dataset/              # Benchmark task JSON files
 prompt/               # Prompt templates
 run_vllm_*.sh         # vLLM launch scripts
-assets/               # Paper figures (PDF)
+assets/               # Figures
 ```
 
 ---
 
 ## Citation
 
-```bibtex
-@inproceedings{epic2026,
-  title   = {EPIC},
-  author  = {},
-  booktitle = {International Conference on Machine Learning (ICML)},
-  year    = {2026}
-}
-```
-
-Update author list and title when the camera-ready version is available.
-
----
-
-## License
-
-TBD.
+<!-- TBD -->
