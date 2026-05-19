@@ -1,8 +1,8 @@
-# EPIC
+# EPIC: From Volume to Value: Preference-Aligned Memory Construction for On-Device RAG
 
-**Accepted at [ICML 2026](https://icml.cc/).**
+**Changmin Lee, Jaemin Kim, and Taesik Gong**
 
-Official code release for **EPIC** — preference-aware retrieval and personalized response generation over large document corpora.
+**ICML '26:** Proceedings of the 43rd International Conference on Machine Learning
 
 ### Motivation
 
