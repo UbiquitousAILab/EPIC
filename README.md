@@ -1,4 +1,4 @@
-# EPIC: From Volume to Value: Preference-Aligned Memory Construction for On-Device RAG
+# From Volume to Value: Preference-Aligned Memory Construction for On-Device RAG
 
 **Changmin Lee, Jaemin Kim, and Taesik Gong**
 
